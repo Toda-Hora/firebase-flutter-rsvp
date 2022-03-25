@@ -103,20 +103,6 @@ class ApplicationState extends ChangeNotifier {
   ApplicationState() {
     init();
   }
-  Future<DocumentReference> addMessageToGuestBook(String message) {
-    if (_loginState != ApplicationLoginState.loggedIn) {
-      throw Exception('Must be logged in');
-    }
-
-    return FirebaseFirestore.instance
-        .collection('guestbook')
-        .add(<String, dynamic>{
-      'text': message,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-      'name': FirebaseAuth.instance.currentUser!.displayName,
-      'userId': FirebaseAuth.instance.currentUser!.uid,
-    });
-  }
 
   Future<void> init() async {
     await Firebase.initializeApp(
@@ -154,11 +140,12 @@ class ApplicationState extends ChangeNotifier {
   ApplicationLoginState _loginState = ApplicationLoginState.loggedOut;
   ApplicationLoginState get loginState => _loginState;
 
+  String? _email;
+  String? get email => _email;
+
   StreamSubscription<QuerySnapshot>? _guestBookSubscription;
   List<GuestBookMessage> _guestBookMessages = [];
   List<GuestBookMessage> get guestBookMessages => _guestBookMessages;
-  String? _email;
-  String? get email => _email;
 
   void startLoginFlow() {
     _loginState = ApplicationLoginState.emailAddress;
@@ -221,6 +208,21 @@ class ApplicationState extends ChangeNotifier {
   void signOut() {
     FirebaseAuth.instance.signOut();
   }
+
+  Future<DocumentReference> addMessageToGuestBook(String message) {
+    if (_loginState != ApplicationLoginState.loggedIn) {
+      throw Exception('Must be logged in');
+    }
+
+    return FirebaseFirestore.instance
+        .collection('guestbook')
+        .add(<String, dynamic>{
+      'text': message,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+      'name': FirebaseAuth.instance.currentUser!.displayName,
+      'userId': FirebaseAuth.instance.currentUser!.uid,
+    });
+  }
 }
 
 class GuestBookMessage {
@@ -247,10 +249,6 @@ class _GuestBookState extends State<GuestBook> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 8),
-        for (var message in widget.messages)
-          Paragraph('${message.name}: ${message.message}'),
-        const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Form(
@@ -291,6 +289,10 @@ class _GuestBookState extends State<GuestBook> {
             ),
           ),
         ),
+        const SizedBox(height: 8),
+        for (var message in widget.messages)
+          Paragraph('${message.name}: ${message.message}'),
+        const SizedBox(height: 8),
       ],
     );
   }
